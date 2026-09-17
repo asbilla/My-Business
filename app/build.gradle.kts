@@ -28,13 +28,13 @@ android {
     val formattedDate = SimpleDateFormat("yyyyMMdd.HHmm", Locale.US).format(now)
     
     versionCode = (timestamp / 10000).toInt() // Unique version code
-    versionName = "4.9" 
+    versionName = "v4.9.5" 
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     
     // Custom output naming
     base {
-        archivesName.set("DailyReport")
+        archivesName.set("MyBusiness-v4.9.5")
     }
   }
 

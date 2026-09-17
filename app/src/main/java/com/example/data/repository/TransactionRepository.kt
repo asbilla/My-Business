@@ -11,6 +11,7 @@ import com.example.data.pref.AppPreferences
 import com.example.data.pref.BusinessProfile
 import com.example.data.remote.RemoteAppointment
 import com.example.data.remote.RemoteTransaction
+import com.example.notification.AppointmentNotificationManager
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 import java.io.File
@@ -55,25 +56,39 @@ class TransactionRepository(
         appointmentDao.getActiveAppointmentCountForDate(date)
 
     suspend fun saveAppointment(appointment: AppointmentEntity, @Suppress("UNUSED_PARAMETER") syncToSheets: Boolean = false): Long {
-        return appointmentDao.insertAppointment(appointment.copy(isSynced = true))
+        val insertedId = appointmentDao.insertAppointment(appointment.copy(isSynced = true))
+        val completeAppointment = appointment.copy(id = insertedId)
+        val settings = getAppointmentSettings()
+        AppointmentNotificationManager.onAppointmentBooked(context, completeAppointment, settings)
+        return insertedId
     }
 
     suspend fun updateAppointment(appointment: AppointmentEntity, @Suppress("UNUSED_PARAMETER") syncToSheets: Boolean = false) {
         appointmentDao.updateAppointment(appointment.copy(isSynced = true))
+        val settings = getAppointmentSettings()
+        AppointmentNotificationManager.onAppointmentUpdated(context, appointment, settings)
     }
 
     suspend fun deleteAppointment(appointment: AppointmentEntity): Result<String> {
+        AppointmentNotificationManager.onAppointmentDeleted(context, appointment.id)
         appointmentDao.deleteAppointment(appointment)
         return Result.success("Deleted from local storage")
     }
 
     suspend fun deleteAppointmentById(id: Long): Result<String> {
+        AppointmentNotificationManager.onAppointmentDeleted(context, id)
         appointmentDao.deleteAppointmentById(id)
         return Result.success("Deleted from local storage")
     }
 
     suspend fun updateAppointmentStatus(id: Long, newStatus: String) {
         appointmentDao.updateStatus(id, newStatus)
+        val appt = appointmentDao.getAllAppointmentsSync().find { it.id == id }
+        if (appt != null) {
+            val updated = appt.copy(status = newStatus)
+            val settings = getAppointmentSettings()
+            AppointmentNotificationManager.onAppointmentUpdated(context, updated, settings)
+        }
     }
 
     fun getAppointmentSettings(): AppointmentSettings = preferences.getAppointmentSettings()

@@ -50,6 +50,23 @@ import androidx.compose.material.icons.filled.PhoneCallback
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import androidx.core.content.ContextCompat
+import com.example.alarm.AppointmentAlarmScheduler
+import com.example.notification.NotificationHelper
+import com.example.util.SmsHelper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -143,6 +160,41 @@ fun AppointmentsScreen(
     var appointmentToEdit by remember { mutableStateOf<AppointmentEntity?>(null) }
     var appointmentToDelete by remember { mutableStateOf<AppointmentEntity?>(null) }
     var isSyncing by remember { mutableStateOf(false) }
+    var showReminderSettingsDialog by remember { mutableStateOf(false) }
+
+    var hasNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                NotificationHelper.areNotificationsEnabled(context)
+            }
+        )
+    }
+
+    var canScheduleExactAlarms by remember {
+        mutableStateOf(AppointmentAlarmScheduler.canScheduleExactAlarms(context))
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasNotificationPermission = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Notifications enabled!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            repository.setAppointmentSettings(appointmentSettings.copy(automatedSmsEnabled = true))
+            Toast.makeText(context, "SMS permission granted! Automated SMS enabled.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "SMS permission denied.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     // Filter appointments
     val filteredAppointments = remember(allAppointments, selectedDate, showAllDates, selectedStatusFilter, searchQuery) {
@@ -200,6 +252,16 @@ fun AppointmentsScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = { showReminderSettingsDialog = true },
+                        modifier = Modifier.testTag("appointments_notifications_button")
+                    ) {
+                        Icon(
+                            imageVector = if (appointmentSettings.notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                            contentDescription = "Notification & Reminder Settings",
+                            tint = if (appointmentSettings.notificationsEnabled) AppointmentPurple else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(
                         onClick = onNavigateToSettings,
                         modifier = Modifier.testTag("appointments_settings_button")
                     ) {
@@ -247,6 +309,114 @@ fun AppointmentsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Notification Permission Banner (Android 13+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Notifications Disabled",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "Enable to receive immediate booking alerts & 24h reminders.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text("Enable", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Exact Alarm Permission Banner (Android 12+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canScheduleExactAlarms) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AppointmentPurpleContainer.copy(alpha = 0.7f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Alarm,
+                            contentDescription = null,
+                            tint = AppointmentPurple,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Exact Alarms Permission",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = AppointmentPurpleText
+                            )
+                            Text(
+                                text = "Required for precise 24-hour pre-appointment background alarms.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                        data = Uri.parse("package:${context.packageName}")
+                                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = AppointmentPurple),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text("Grant", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             // PROMINENT QUICK CALLER BOOKING HERO CARD
             Card(
                 colors = CardDefaults.cardColors(
@@ -595,6 +765,127 @@ fun AppointmentsScreen(
             dismissButton = {
                 TextButton(onClick = { appointmentToDelete = null }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // NOTIFICATION & REMINDER SETTINGS DIALOG
+    if (showReminderSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showReminderSettingsDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    tint = AppointmentPurple,
+                    modifier = Modifier.size(28.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Notification & Reminder Settings",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Push notifications toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Push Notifications", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Immediate booking alerts and cancellation notices", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = appointmentSettings.notificationsEnabled,
+                            onCheckedChange = { checked ->
+                                if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                repository.setAppointmentSettings(appointmentSettings.copy(notificationsEnabled = checked))
+                            },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                        )
+                    }
+
+                    // 24-Hour Alarm Reminder toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("24-Hour Pre-Appointment Alarm", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Exact AlarmManager reminder 24h prior to appointment", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = appointmentSettings.reminder24hEnabled,
+                            onCheckedChange = { checked ->
+                                repository.setAppointmentSettings(appointmentSettings.copy(reminder24hEnabled = checked))
+                                if (checked) {
+                                    // Reschedule alarms for upcoming active appointments
+                                    scope.launch {
+                                        for (appt in allAppointments) {
+                                            if (appt.status != "Cancelled" && appt.status != "Completed") {
+                                                AppointmentAlarmScheduler.schedule24hReminder(context, appt)
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    // Cancel all active reminder alarms
+                                    for (appt in allAppointments) {
+                                        AppointmentAlarmScheduler.cancelReminder(context, appt.id)
+                                    }
+                                }
+                            },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                        )
+                    }
+
+                    // Automated Client SMS toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Automated Client SMS", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Automatically dispatch confirmation and 24h SMS to clients", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = appointmentSettings.automatedSmsEnabled,
+                            onCheckedChange = { checked ->
+                                if (checked) {
+                                    if (SmsHelper.canSendSms(context)) {
+                                        repository.setAppointmentSettings(appointmentSettings.copy(automatedSmsEnabled = true))
+                                    } else {
+                                        smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+                                    }
+                                } else {
+                                    repository.setAppointmentSettings(appointmentSettings.copy(automatedSmsEnabled = false))
+                                }
+                            },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showReminderSettingsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppointmentPurple)
+                ) {
+                    Text("Done")
                 }
             }
         )
@@ -976,6 +1267,43 @@ fun AppointmentItemCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 16.sp
                 )
+            }
+
+            // 24-Hour Alarm Reminder Status Indicator
+            val isCancelled = appointment.status.equals("Cancelled", ignoreCase = true)
+            val isCompleted = appointment.status.equals("Completed", ignoreCase = true)
+            val reminderTriggerTime = AppointmentAlarmScheduler.calculate24hReminderTime(appointment.appointmentDate, appointment.appointmentTime)
+            val hasScheduledReminder = !isCancelled && !isCompleted && reminderTriggerTime != null && reminderTriggerTime > System.currentTimeMillis()
+
+            if (isCancelled) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = ExpenseRed.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Cancel, contentDescription = null, tint = ExpenseRed, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Reminder Alarm Cancelled", fontSize = 11.sp, color = ExpenseRed, fontWeight = FontWeight.Medium)
+                    }
+                }
+            } else if (hasScheduledReminder && reminderTriggerTime != null) {
+                val formattedReminder = SimpleDateFormat("MMM d 'at' hh:mm a", Locale.getDefault()).format(Date(reminderTriggerTime))
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = AppointmentPurpleContainer.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Alarm, contentDescription = null, tint = AppointmentPurple, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("24h Alarm Set: $formattedReminder", fontSize = 11.sp, color = AppointmentPurpleText, fontWeight = FontWeight.SemiBold)
+                    }
+                }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -1404,6 +1732,59 @@ fun BookAppointmentSheetContent(
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         )
+
+        // 8. Notifications & 24h Reminder Summary Card
+        val reminderTime = remember(appointmentDate, appointmentTime) {
+            AppointmentAlarmScheduler.calculate24hReminderTime(appointmentDate, appointmentTime)
+        }
+        val isFutureReminder = reminderTime != null && reminderTime > System.currentTimeMillis()
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = AppointmentPurpleContainer.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        tint = AppointmentPurple,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Immediate Notification: Active on confirm",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppointmentPurpleText
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Alarm,
+                        contentDescription = null,
+                        tint = if (isFutureReminder) IncomeGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isFutureReminder && reminderTime != null) {
+                            "24h Alarm: Scheduled for ${SimpleDateFormat("MMM d, yyyy 'at' hh:mm a", Locale.getDefault()).format(Date(reminderTime))}"
+                        } else {
+                            "24h Alarm: Within 24h (Immediate confirmation will fire)"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isFutureReminder) IncomeGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(6.dp))
 

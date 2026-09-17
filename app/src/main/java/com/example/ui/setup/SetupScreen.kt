@@ -42,6 +42,12 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Sms
+import android.Manifest
+import com.example.util.SmsHelper
+import com.example.alarm.AppointmentAlarmScheduler
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -127,6 +133,20 @@ fun SetupScreen(
     var endHour by remember { mutableStateOf(initialAppointmentSettings.endHour) }
     var bufferMinutes by remember { mutableStateOf(initialAppointmentSettings.bufferMinutes) }
     var workingDays by remember { mutableStateOf(initialAppointmentSettings.workingDays) }
+    var notificationsEnabled by remember { mutableStateOf(initialAppointmentSettings.notificationsEnabled) }
+    var reminder24hEnabled by remember { mutableStateOf(initialAppointmentSettings.reminder24hEnabled) }
+    var automatedSmsEnabled by remember { mutableStateOf(initialAppointmentSettings.automatedSmsEnabled) }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        automatedSmsEnabled = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "SMS permission granted! Automated SMS enabled.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "SMS permission denied. Automated SMS disabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val currentTheme by repository.themeMode.collectAsState(initial = repository.getThemeMode())
 
@@ -443,7 +463,10 @@ fun SetupScreen(
                         endHour = endHour,
                         endMinute = 0,
                         bufferMinutes = bufferMinutes,
-                        workingDays = workingDays
+                        workingDays = workingDays,
+                        notificationsEnabled = notificationsEnabled,
+                        reminder24hEnabled = reminder24hEnabled,
+                        automatedSmsEnabled = automatedSmsEnabled
                     )
                     repository.setAppointmentSettings(newSettings)
                     scope.launch {
@@ -798,6 +821,97 @@ fun SetupScreen(
                                 )
                             }
                         }
+
+                        // Local Notifications & Automated Messaging Section
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            text = "Notifications & Reminders",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = AppointmentPurple
+                        )
+
+                        // 1. Instant Push Notifications Toggle
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(imageVector = Icons.Default.Notifications, contentDescription = null, tint = AppointmentPurple, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Instant Push Notifications", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("Immediate alerts for bookings and cancellations", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = notificationsEnabled,
+                                onCheckedChange = { notificationsEnabled = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                            )
+                        }
+
+                        // 2. 24-Hour Pre-Appointment Reminder Alarm Toggle
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(imageVector = Icons.Default.Alarm, contentDescription = null, tint = AppointmentPurple, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("24-Hour Pre-Appointment Alarm", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("Exact AlarmManager background reminder 24h prior", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = reminder24hEnabled,
+                                onCheckedChange = { reminder24hEnabled = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                            )
+                        }
+
+                        // 3. Automated Local SMS Messages Toggle
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(imageVector = Icons.Default.Sms, contentDescription = null, tint = AppointmentPurple, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Automated Client SMS", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text("Auto-send confirmation & 24h reminder SMS directly", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = automatedSmsEnabled,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        if (SmsHelper.canSendSms(context)) {
+                                            automatedSmsEnabled = true
+                                        } else {
+                                            smsPermissionLauncher.launch(Manifest.permission.SEND_SMS)
+                                        }
+                                    } else {
+                                        automatedSmsEnabled = false
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(checkedThumbColor = AppointmentPurple, checkedTrackColor = AppointmentPurpleContainer)
+                            )
+                        }
                     }
 
                     // Save Appointment Settings Button
@@ -811,10 +925,13 @@ fun SetupScreen(
                                 endHour = endHour,
                                 endMinute = 0,
                                 bufferMinutes = bufferMinutes,
-                                workingDays = workingDays
+                                workingDays = workingDays,
+                                notificationsEnabled = notificationsEnabled,
+                                reminder24hEnabled = reminder24hEnabled,
+                                automatedSmsEnabled = automatedSmsEnabled
                             )
                             repository.setAppointmentSettings(newSettings)
-                            Toast.makeText(context, "Calendar & Time Slot Settings Saved!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Calendar & Notification Settings Saved!", Toast.LENGTH_SHORT).show()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = AppointmentPurple),
                         shape = RoundedCornerShape(10.dp),
@@ -1009,6 +1126,25 @@ fun SetupScreen(
             }
 
             Spacer(modifier = Modifier.height(10.dp))
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "My Business v4.9.5",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Text(
+                    text = "Offline-First POS & Appointments System",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

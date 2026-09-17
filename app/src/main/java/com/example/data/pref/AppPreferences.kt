@@ -79,6 +79,10 @@ class AppPreferences(context: Context) {
         } catch (_: Exception) {
             setOf(1, 2, 3, 4, 5, 6)
         }
+        val notifEnabled = prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
+        val rem24hEnabled = prefs.getBoolean(KEY_REMINDER_24H_ENABLED, true)
+        val autoSmsEnabled = prefs.getBoolean(KEY_AUTOMATED_SMS_ENABLED, false)
+
         return com.example.data.model.AppointmentSettings(
             bookingEnabled = enabled,
             slotDurationMinutes = slotDuration,
@@ -87,7 +91,10 @@ class AppPreferences(context: Context) {
             endHour = endH,
             endMinute = endM,
             bufferMinutes = buffer,
-            workingDays = days
+            workingDays = days,
+            notificationsEnabled = notifEnabled,
+            reminder24hEnabled = rem24hEnabled,
+            automatedSmsEnabled = autoSmsEnabled
         )
     }
 
@@ -101,6 +108,9 @@ class AppPreferences(context: Context) {
             .putInt(KEY_END_MINUTE, settings.endMinute)
             .putInt(KEY_BUFFER_MINUTES, settings.bufferMinutes)
             .putString(KEY_WORKING_DAYS, settings.workingDays.joinToString(","))
+            .putBoolean(KEY_NOTIFICATIONS_ENABLED, settings.notificationsEnabled)
+            .putBoolean(KEY_REMINDER_24H_ENABLED, settings.reminder24hEnabled)
+            .putBoolean(KEY_AUTOMATED_SMS_ENABLED, settings.automatedSmsEnabled)
             .apply()
         _appointmentSettingsFlow.value = settings
     }
@@ -232,6 +242,9 @@ class AppPreferences(context: Context) {
         private const val KEY_END_MINUTE = "appointment_end_minute"
         private const val KEY_BUFFER_MINUTES = "appointment_buffer_minutes"
         private const val KEY_WORKING_DAYS = "appointment_working_days"
+        private const val KEY_NOTIFICATIONS_ENABLED = "appointment_notifications_enabled"
+        private const val KEY_REMINDER_24H_ENABLED = "appointment_reminder_24h_enabled"
+        private const val KEY_AUTOMATED_SMS_ENABLED = "appointment_automated_sms_enabled"
 
         @Volatile
         private var INSTANCE: AppPreferences? = null

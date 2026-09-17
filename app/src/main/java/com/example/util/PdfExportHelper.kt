@@ -100,10 +100,10 @@ object PdfExportHelper {
             var y = 36f
 
             // Document & Business Header: Business details on the right side as requested
-            val displayName = if (profile.businessName.isNotBlank()) profile.businessName else "DAILY BUSINESS REPORT"
+            val displayName = if (profile.businessName.isNotBlank()) profile.businessName else "MY BUSINESS"
             
             // Left Side: Report Title
-            canvas.drawText("DAILY BUSINESS REPORT", 30f, y, titlePaint)
+            canvas.drawText("MY BUSINESS REPORT", 30f, y, titlePaint)
             
             // Right Side: Business Name & Details
             val nameWidth = titlePaint.measureText(displayName)
@@ -326,7 +326,7 @@ object PdfExportHelper {
             canvas.drawText("TAX INVOICE", 40f, y, titlePaint)
 
             // Business details on the right side
-            val bizName = if (profile.businessName.isNotBlank()) profile.businessName else "Daily Business Report"
+            val bizName = if (profile.businessName.isNotBlank()) profile.businessName else "My Business"
             val bizWidth = titlePaint.measureText(bizName)
             canvas.drawText(bizName, pageWidth - 40f - bizWidth, y, titlePaint)
             y += 18f

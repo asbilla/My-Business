@@ -11,7 +11,10 @@ data class AppointmentSettings(
     val endHour: Int = 18,
     val endMinute: Int = 0,
     val bufferMinutes: Int = 0,
-    val workingDays: Set<Int> = setOf(1, 2, 3, 4, 5, 6) // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
+    val workingDays: Set<Int> = setOf(1, 2, 3, 4, 5, 6), // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
+    val notificationsEnabled: Boolean = true,
+    val reminder24hEnabled: Boolean = true,
+    val automatedSmsEnabled: Boolean = false
 ) {
     fun formatWorkingHours(): String {
         val startFormatted = formatTime(startHour, startMinute)

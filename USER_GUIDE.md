@@ -1,6 +1,6 @@
-# Daily Report — Comprehensive User Guide & Operations Manual
+# My Business — Comprehensive User Guide & Operations Manual
 
-Welcome to **Daily Report**, an all-in-one business management, Point of Sale (POS), expense tracking, and day-by-day financial balance sheet application built for Android and seamlessly integrated with **Google Sheets**.
+Welcome to **My Business**, an all-in-one business management, Point of Sale (POS), expense tracking, and day-by-day financial balance sheet application built for Android and seamlessly integrated with **Google Sheets**.
 
 This guide covers all features, functions, setup steps, and workflows to help you manage your daily business operations, track income and expenses, print tax invoices, and export financial PDF reports.
 
@@ -40,7 +40,7 @@ This guide covers all features, functions, setup steps, and workflows to help yo
 
 ## 1. App Overview & Architecture
 
-**Daily Report** provides small businesses, salons, service providers, and retail stores with an intuitive tool to manage daily cashflow:
+**My Business** provides small businesses, salons, service providers, and retail stores with an intuitive tool to manage daily cashflow:
 
 - **Point of Sale (POS)**: Fast service/item selection, shopping cart, cash and card toggles, and instant professional tax invoices.
 - **Expense & Bill Tracker**: Log supplies, inventory, utilities, and salon rent with categorized notes.
@@ -72,11 +72,11 @@ Setting up your Google Sheets backend takes only 2–3 minutes. Follow these exa
 6. Click the blue **Deploy** button at the top right and choose **New deployment**.
 7. In the configuration popup:
    - Click the gear icon next to "Select type" and choose **Web app**.
-   - **Description**: Enter `Daily Report Backend`.
+   - **Description**: Enter `My Business Backend`.
    - **Execute as**: Select **Me (your-email@gmail.com)**. *(Crucial)*
    - **Who has access**: Select **Anyone**. *(Crucial for the Android app to connect)*
 8. Click **Deploy**.
-9. If prompted, click **Authorize access**, choose your Google account, click **Advanced**, and select **Go to Daily Report Backend (unsafe)**, then click **Allow**.
+9. If prompted, click **Authorize access**, choose your Google account, click **Advanced**, and select **Go to My Business Backend (unsafe)**, then click **Allow**.
 10. Copy the generated **Web app URL**. It looks like:
     ```
     https://script.google.com/macros/s/AKfycb.../exec
@@ -84,7 +84,7 @@ Setting up your Google Sheets backend takes only 2–3 minutes. Follow these exa
     *(Note: Ensure the URL ends in `/exec`, NOT `/dev`)*.
 
 ### Step 3: Configure In-App Business Profile & Link Sheet
-1. Open the **Daily Report** app on your Android device.
+1. Open the **My Business** app on your Android device.
 2. If this is your first time opening the app, you will see the **Sheet Integration Setup** screen. (You can also access this anytime by tapping the **Settings Gear** icon on the Dashboard).
 3. Fill in your **Business Registration Details**:
    - **1st for Business Name**: (e.g., `Sunshine Beauty & Threading`)
@@ -370,4 +370,4 @@ The latest compiled Android package is located directly in the root directory:
 
 ---
 
-*Daily Report — Streamlined Business Financial Reporting & POS for Android & Google Sheets.*
+*My Business — Streamlined Business Financial Reporting & POS for Android & Google Sheets.*

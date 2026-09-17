@@ -113,9 +113,9 @@ fun DashboardScreen(
     val todayNet = todayIncome - (todayExpense + todayBills)
 
     val headerTitle = if (businessProfile.businessName.isNotBlank()) {
-        "Daily Business Report (${businessProfile.businessName})"
+        "My Business (${businessProfile.businessName})"
     } else {
-        "Daily Business Report (Business Name)"
+        "My Business (Business Name)"
     }
 
     Scaffold(

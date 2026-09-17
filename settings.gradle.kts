@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Daily Report"
+rootProject.name = "My Business"
 
 include(":app")

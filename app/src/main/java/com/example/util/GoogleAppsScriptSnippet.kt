@@ -3,7 +3,7 @@ package com.example.util
 object GoogleAppsScriptSnippet {
     val CODE: String = """
 /**
- * Google Apps Script Backend for Daily Business Reporting Android App
+ * Google Apps Script Backend for My Business Android App
  * 
  * Features:
  * - Dynamic Monthly Sheets (e.g., Sep26, Oct26, Nov26)

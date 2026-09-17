@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.data.repository.TransactionRepository
+import com.example.notification.NotificationHelper
 import com.example.ui.appointments.AppointmentsScreen
 import com.example.ui.balancesheet.BalanceSheetScreen
 import com.example.ui.dashboard.DashboardScreen
@@ -33,7 +34,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Ensure Notification Channel is created for booking alerts and reminders
+        NotificationHelper.createNotificationChannel(applicationContext)
+
         val repository = TransactionRepository.getInstance(applicationContext)
+        val navigateTo = intent?.getStringExtra("navigate_to")
+        val startDestination = if (navigateTo == "appointments") Screen.Appointments.route else Screen.Dashboard.route
         
         setContent {
             val themeMode by repository.themeMode.collectAsState(initial = repository.getThemeMode())
@@ -43,7 +49,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation(repository = repository)
+                    AppNavigation(
+                        repository = repository,
+                        startDestination = startDestination
+                    )
                 }
             }
         }
@@ -65,11 +74,10 @@ sealed class Screen(val route: String) {
 @Composable
 fun AppNavigation(
     repository: TransactionRepository,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    startDestination: String = Screen.Dashboard.route
 ) {
     val navController = rememberNavController()
-
-    val startDestination = Screen.Dashboard.route
 
     NavHost(
         navController = navController,

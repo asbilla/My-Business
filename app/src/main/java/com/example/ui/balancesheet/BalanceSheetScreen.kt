@@ -422,7 +422,7 @@ fun BalanceSheetScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Business:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        Text(profile.businessName.ifBlank { "Daily Business Report" }, fontSize = 12.sp)
+                        Text(profile.businessName.ifBlank { "My Business" }, fontSize = 12.sp)
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

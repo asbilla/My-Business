@@ -2,14 +2,14 @@
 <img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 </div>
 
-# Daily Report — POS, Expense Tracker & Balance Sheet
+# My Business — POS, Expense Tracker & Balance Sheet
 
 [![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Google Sheets](https://img.shields.io/badge/Cloud-Google%20Sheets%20API-34A853.svg)](https://sheets.google.com)
 [![Offline First](https://img.shields.io/badge/Database-Room%20SQLite-orange.svg)](https://developer.android.com/training/data-storage/room)
 
-**Daily Report** is a modern, offline-first business management application designed for salons, service providers, and small businesses. It combines an intuitive **Point of Sale (POS)**, real-time **Expense & Bill tracking**, a continuous **Day-by-Day Balance Sheet**, instant **Tax Invoices**, and automated **Google Sheets synchronization**.
+**My Business** is a modern, offline-first business management application designed for salons, service providers, and small businesses. It combines an intuitive **Point of Sale (POS)**, real-time **Expense & Bill tracking**, a continuous **Day-by-Day Balance Sheet**, instant **Tax Invoices**, and automated **Google Sheets synchronization**.
 
 > 📖 **Looking for in-depth documentation?** Check out **[USER_GUIDE.md](USER_GUIDE.md)** for exhaustive step-by-step operational workflows, troubleshooting, and screenshots guide.
 
@@ -38,7 +38,7 @@ Download or copy `DailyReport.apk` located in the root directory to your Android
 3. Replace any code in `Code.gs` with the code from **`Code.gs`** in this project (or tap **View & Copy Apps Script Code** inside the app setup screen).
 4. Click **Deploy > New deployment**:
    - **Select type**: Web app
-   - **Description**: `Daily Report Backend`
+   - **Description**: `My Business Backend`
    - **Execute as**: `Me (your-email@gmail.com)`
    - **Who has access**: `Anyone`
 5. Click **Deploy**, authorize access, and copy the Web App URL (ending in `/exec`).
