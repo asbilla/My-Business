@@ -46,6 +46,18 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Sms
 import android.Manifest
+import android.os.Build
+import android.provider.Settings
+import android.net.Uri
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.filled.PhoneInTalk
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ContactPhone
+import com.example.service.CallOverlayService
+import com.example.notification.NotificationHelper
 import com.example.util.SmsHelper
 import com.example.alarm.AppointmentAlarmScheduler
 import androidx.compose.material3.Button
@@ -145,6 +157,48 @@ fun SetupScreen(
             Toast.makeText(context, "SMS permission granted! Automated SMS enabled.", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, "SMS permission denied. Automated SMS disabled.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    var hasPhoneStatePermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var hasContactsPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var hasOverlayPermission by remember {
+        mutableStateOf(Settings.canDrawOverlays(context))
+    }
+    var hasPostNotificationPermission by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    val phoneAndContactsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        hasPhoneStatePermission = perms[Manifest.permission.READ_PHONE_STATE] == true
+        hasContactsPermission = perms[Manifest.permission.READ_CONTACTS] == true
+        if (hasPhoneStatePermission) {
+            Toast.makeText(context, "Phone State Permission Granted!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val postNotificationLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPostNotificationPermission = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Notifications Granted!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -950,6 +1004,258 @@ fun SetupScreen(
                 }
             }
 
+            // INCOMING CALL LISTENER & BOOKING OVERLAY CARD
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.5.dp, AppointmentPurple.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = AppointmentPurple.copy(alpha = 0.15f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.PhoneInTalk,
+                                    contentDescription = null,
+                                    tint = AppointmentPurple,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Incoming Call Listener & Caller ID",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Floating popup & Heads-up notification with +Book Now",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    Text(
+                        text = "When an incoming client call rings or connects, My Business automatically identifies the caller (from Contacts or appointment history) and shows a floating overlay + heads-up banner. Tapping '+ Book Now' opens the appointment sheet pre-filled with the caller's name & number so you can schedule them while talking.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 16.sp
+                    )
+
+                    // Permission Status Badges
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "REQUIRED PERMISSIONS STATUS",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppointmentPurple
+                        )
+
+                        // 1. Phone State & Call Log
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (hasPhoneStatePermission) Icons.Default.CheckCircle else Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = if (hasPhoneStatePermission) IncomeGreen else ExpenseRed,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Phone State & Number Detection", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+                            Text(
+                                text = if (hasPhoneStatePermission) "Granted" else "Needed",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasPhoneStatePermission) IncomeGreen else ExpenseRed
+                            )
+                        }
+
+                        // 2. Contacts Lookup
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (hasContactsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = if (hasContactsPermission) IncomeGreen else BalanceBlue,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Contacts Name Resolver", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+                            Text(
+                                text = if (hasContactsPermission) "Granted" else "Optional",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasContactsPermission) IncomeGreen else BalanceBlue
+                            )
+                        }
+
+                        // 3. Draw Over Other Apps (Overlay)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (hasOverlayPermission) Icons.Default.CheckCircle else Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = if (hasOverlayPermission) IncomeGreen else ExpenseRed,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Display Over Other Apps (Floating UI)", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+                            Text(
+                                text = if (hasOverlayPermission) "Active" else "Needed",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasOverlayPermission) IncomeGreen else ExpenseRed
+                            )
+                        }
+
+                        // 4. Notifications
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (hasPostNotificationPermission) Icons.Default.CheckCircle else Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = if (hasPostNotificationPermission) IncomeGreen else ExpenseRed,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Heads-Up Notifications", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                            }
+                            Text(
+                                text = if (hasPostNotificationPermission) "Active" else "Needed",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasPostNotificationPermission) IncomeGreen else ExpenseRed
+                            )
+                        }
+                    }
+
+                    // Action buttons to grant permissions
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (!hasPhoneStatePermission || !hasContactsPermission) {
+                            Button(
+                                onClick = {
+                                    phoneAndContactsLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.READ_PHONE_STATE,
+                                            Manifest.permission.READ_CALL_LOG,
+                                            Manifest.permission.READ_CONTACTS
+                                        )
+                                    )
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppointmentPurple),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(imageVector = Icons.Default.PhoneInTalk, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Grant Phone Perms", fontSize = 12.sp)
+                            }
+                        }
+
+                        if (!hasOverlayPermission) {
+                            OutlinedButton(
+                                onClick = {
+                                    try {
+                                        val intent = Intent(
+                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                            Uri.parse("package:${context.packageName}")
+                                        ).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        context.startActivity(intent)
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "Open Settings -> Apps -> Draw over other apps", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(imageVector = Icons.Default.Layers, contentDescription = null, modifier = Modifier.size(16.dp), tint = AppointmentPurple)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Enable Overlay", fontSize = 12.sp, color = AppointmentPurple)
+                            }
+                        }
+                    }
+
+                    // Interactive Test Trigger Button
+                    Button(
+                        onClick = {
+                            NotificationHelper.showIncomingCallNotification(
+                                context = context,
+                                callerName = "Sarah Jenkins",
+                                phoneNumber = "+61 400 123 456",
+                                callState = "RINGING"
+                            )
+                            if (Settings.canDrawOverlays(context)) {
+                                CallOverlayService.show(
+                                    context = context,
+                                    callerName = "Sarah Jenkins",
+                                    phoneNumber = "+61 400 123 456"
+                                )
+                            }
+                            Toast.makeText(context, "📞 Triggered test call alert! Check heads-up banner & floating overlay.", Toast.LENGTH_LONG).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4F46E5)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("test_incoming_call_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "⚡ Test Incoming Call Popup & Alert",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+
             // 3. MENU & SERVICES MANAGEMENT
             Card(
                 colors = CardDefaults.cardColors(
@@ -1132,7 +1438,7 @@ fun SetupScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "My Business v4.9.5",
+                    text = "My Business v5.0",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)

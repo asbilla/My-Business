@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
@@ -28,7 +31,14 @@ import com.example.ui.setup.MenuManagementScreen
 import com.example.ui.setup.SetupScreen
 import com.example.ui.theme.MyApplicationTheme
 
+data class CallerBookingInfo(
+    val callerName: String,
+    val callerPhone: String
+)
+
 class MainActivity : ComponentActivity() {
+
+    private val pendingCallerBooking = mutableStateOf<CallerBookingInfo?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,9 +47,12 @@ class MainActivity : ComponentActivity() {
         // Ensure Notification Channel is created for booking alerts and reminders
         NotificationHelper.createNotificationChannel(applicationContext)
 
+        handleCallerIntent(intent)
+
         val repository = TransactionRepository.getInstance(applicationContext)
         val navigateTo = intent?.getStringExtra("navigate_to")
-        val startDestination = if (navigateTo == "appointments") Screen.Appointments.route else Screen.Dashboard.route
+        val isAutoBook = intent?.getBooleanExtra("auto_book", false) == true
+        val startDestination = if (navigateTo == "appointments" || isAutoBook) Screen.Appointments.route else Screen.Dashboard.route
         
         setContent {
             val themeMode by repository.themeMode.collectAsState(initial = repository.getThemeMode())
@@ -51,10 +64,34 @@ class MainActivity : ComponentActivity() {
                 ) {
                     AppNavigation(
                         repository = repository,
-                        startDestination = startDestination
+                        startDestination = startDestination,
+                        pendingCallerBooking = pendingCallerBooking.value,
+                        onClearCallerBooking = {
+                            pendingCallerBooking.value = null
+                        }
                     )
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleCallerIntent(intent)
+    }
+
+    private fun handleCallerIntent(intent: Intent?) {
+        if (intent == null) return
+        val isAutoBook = intent.getBooleanExtra("auto_book", false)
+        val callerName = intent.getStringExtra("caller_name").orEmpty()
+        val callerPhone = intent.getStringExtra("caller_phone").orEmpty()
+
+        if (isAutoBook || (callerName.isNotBlank() && callerPhone.isNotBlank())) {
+            pendingCallerBooking.value = CallerBookingInfo(
+                callerName = callerName,
+                callerPhone = callerPhone
+            )
         }
     }
 }
@@ -75,9 +112,22 @@ sealed class Screen(val route: String) {
 fun AppNavigation(
     repository: TransactionRepository,
     modifier: Modifier = Modifier,
-    startDestination: String = Screen.Dashboard.route
+    startDestination: String = Screen.Dashboard.route,
+    pendingCallerBooking: CallerBookingInfo? = null,
+    onClearCallerBooking: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+
+    // Automatically navigate to Appointments when an incoming call book action is triggered
+    LaunchedEffect(pendingCallerBooking) {
+        if (pendingCallerBooking != null) {
+            if (navController.currentDestination?.route != Screen.Appointments.route) {
+                navController.navigate(Screen.Appointments.route) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -143,7 +193,11 @@ fun AppNavigation(
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Setup.route)
-                }
+                },
+                initialCallerName = pendingCallerBooking?.callerName,
+                initialCallerPhone = pendingCallerBooking?.callerPhone,
+                autoOpenBooking = pendingCallerBooking != null,
+                onClearAutoBooking = onClearCallerBooking
             )
         }
 

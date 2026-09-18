@@ -94,6 +94,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -135,7 +136,11 @@ fun AppointmentsScreen(
     repository: TransactionRepository,
     onNavigateBack: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialCallerName: String? = null,
+    initialCallerPhone: String? = null,
+    autoOpenBooking: Boolean = false,
+    onClearAutoBooking: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -161,6 +166,24 @@ fun AppointmentsScreen(
     var appointmentToDelete by remember { mutableStateOf<AppointmentEntity?>(null) }
     var isSyncing by remember { mutableStateOf(false) }
     var showReminderSettingsDialog by remember { mutableStateOf(false) }
+
+    // Auto-fill and launch booking sheet when arriving from incoming call notification or overlay
+    LaunchedEffect(autoOpenBooking, initialCallerPhone, initialCallerName) {
+        if (autoOpenBooking && (!initialCallerPhone.isNullOrBlank() || !initialCallerName.isNullOrBlank())) {
+            appointmentToEdit = AppointmentEntity(
+                id = 0L,
+                customerName = initialCallerName.orEmpty(),
+                customerPhone = initialCallerPhone.orEmpty(),
+                serviceName = "Consultation",
+                appointmentDate = todayIso,
+                appointmentTime = availableTimeSlots.firstOrNull() ?: "09:00 AM",
+                status = "Scheduled"
+            )
+            showBookingSheet = true
+            Toast.makeText(context, "📞 Caller details auto-filled!", Toast.LENGTH_SHORT).show()
+            onClearAutoBooking()
+        }
+    }
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -1389,7 +1412,7 @@ fun BookAppointmentSheetContent(
 
     var customTimeInput by remember { mutableStateOf(false) }
 
-    val isEditing = initialAppointment != null
+    val isEditing = initialAppointment != null && initialAppointment.id != 0L
 
     Column(
         modifier = Modifier

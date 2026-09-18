@@ -31,7 +31,8 @@ object PdfExportHelper {
         overallExpenses: Double,
         overallBills: Double,
         overallNet: Double,
-        profile: com.example.data.pref.BusinessProfile = com.example.data.pref.BusinessProfile()
+        profile: com.example.data.pref.BusinessProfile = com.example.data.pref.BusinessProfile(),
+        periodTitle: String = ""
     ): File? {
         try {
             val pdfDoc = PdfDocument()
@@ -57,6 +58,19 @@ object PdfExportHelper {
             val metaPaint = Paint().apply {
                 color = Color.rgb(100, 116, 139)
                 textSize = 8.5f
+            }
+
+            // Dark blue background for period subtitle banner
+            val periodBannerBgPaint = Paint().apply {
+                color = Color.rgb(26, 54, 93) // Professional Dark Blue (#1A365D)
+            }
+
+            // Period subtitle text: center aligned, bold, white, slightly larger font
+            val periodBannerTextPaint = Paint().apply {
+                color = Color.WHITE
+                textSize = 12f
+                isFakeBoldText = true
+                textAlign = Paint.Align.CENTER
             }
 
             val headerBgPaint = Paint().apply {
@@ -103,7 +117,7 @@ object PdfExportHelper {
             val displayName = if (profile.businessName.isNotBlank()) profile.businessName else "MY BUSINESS"
             
             // Left Side: Report Title
-            canvas.drawText("MY BUSINESS REPORT", 30f, y, titlePaint)
+            canvas.drawText("FINANCIAL STATEMENTS", 30f, y, titlePaint)
             
             // Right Side: Business Name & Details
             val nameWidth = titlePaint.measureText(displayName)
@@ -132,15 +146,26 @@ object PdfExportHelper {
                 y += 13f
             }
 
-            val timeStamp = SimpleDateFormat("dd-MM-yyyy hh:mm a", Locale.getDefault()).format(Date())
-            canvas.drawText("BALANCE SHEET FINANCIAL STATEMENT  •  Generated on: $timeStamp", 30f, y, metaPaint)
-            y += 12f
             canvas.drawLine(30f, y, (pageWidth - 30).toFloat(), y, linePaint)
-            y += 12f
+            y += 10f
 
-            // Summary Totals Box
-            canvas.drawRect(30f, y, (pageWidth - 30).toFloat(), y + 45f, headerBgPaint)
-            y += 18f
+            val metaText = if (periodTitle.isNotBlank()) {
+                periodTitle
+            } else {
+                val timeStamp = SimpleDateFormat("dd-MM-yyyy hh:mm a", Locale.getDefault()).format(Date())
+                "BALANCE SHEET FINANCIAL STATEMENT  •  Generated on: $timeStamp"
+            }
+
+            // Separate Period Subtitle Banner: Dark blue background, center aligned, bold, white, slightly bigger font
+            val bannerHeight = 22f
+            canvas.drawRect(30f, y, (pageWidth - 30).toFloat(), y + bannerHeight, periodBannerBgPaint)
+            val centerX = pageWidth / 2f
+            canvas.drawText(metaText, centerX, y + 15f, periodBannerTextPaint)
+            y += bannerHeight + 10f
+
+            // Summary Totals Box (Total Income, Total Expenses, Total Bills, Overall Net Balance)
+            canvas.drawRect(30f, y, (pageWidth - 30).toFloat(), y + 38f, headerBgPaint)
+            y += 15f
             canvas.drawText(
                 "Total Income: $${String.format(Locale.US, "%,.2f", overallIncome)}    " +
                         "Total Expenses: $${String.format(Locale.US, "%,.2f", overallExpenses)}    " +
@@ -149,11 +174,11 @@ object PdfExportHelper {
                 y,
                 boldTextPaint
             )
-            y += 16f
+            y += 14f
             val netText = "Overall Net Balance: $${String.format(Locale.US, "%,.2f", overallNet)}"
             val netPaint = if (overallNet >= 0) greenPaint else redPaint
             canvas.drawText(netText, 40f, y, netPaint)
-            y += 30f
+            y += 20f
 
             // Table Columns: Date (60), Type (80), Notes (140), Income (70), Exp/Bills (70), Running Balance (80)
             fun drawTableHeader(currY: Float) {

@@ -61,4 +61,7 @@ interface AppointmentDao {
 
     @Query("UPDATE appointments SET status = :newStatus WHERE id = :id")
     suspend fun updateStatus(id: Long, newStatus: String)
+
+    @Query("SELECT customerName FROM appointments WHERE customerPhone = :phone AND customerName != '' ORDER BY id DESC LIMIT 1")
+    suspend fun getCustomerNameByPhone(phone: String): String?
 }

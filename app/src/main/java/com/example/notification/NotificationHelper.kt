@@ -20,10 +20,18 @@ object NotificationHelper {
     private const val CHANNEL_NAME = "Appointment Reminders & Confirmations"
     private const val CHANNEL_DESC = "Notifications for booking confirmations, cancellations, and 24-hour reminders"
 
+    const val INCOMING_CALL_CHANNEL_ID = "incoming_calls_channel"
+    private const val INCOMING_CALL_CHANNEL_NAME = "Incoming Call Booking Alerts"
+    private const val INCOMING_CALL_CHANNEL_DESC = "Heads-up notification for incoming caller appointment booking"
+
+    const val INCOMING_CALL_NOTIFICATION_ID = 88888
+
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            // Appointment Channel
+            val appointmentChannel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = CHANNEL_DESC
                 enableLights(true)
                 enableVibration(true)
@@ -36,9 +44,24 @@ object NotificationHelper {
                     .build()
                 setSound(soundUri, audioAttributes)
             }
+            notificationManager.createNotificationChannel(appointmentChannel)
 
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            // Incoming Call Channel (Heads-up)
+            val callChannel = NotificationChannel(INCOMING_CALL_CHANNEL_ID, INCOMING_CALL_CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
+                description = INCOMING_CALL_CHANNEL_DESC
+                enableLights(true)
+                enableVibration(true)
+                setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val audioAttributes = AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .build()
+                setSound(soundUri, audioAttributes)
+            }
+            notificationManager.createNotificationChannel(callChannel)
         }
     }
 
@@ -167,5 +190,70 @@ object NotificationHelper {
         } catch (_: SecurityException) {
             // Handled when POST_NOTIFICATIONS runtime permission is not granted
         }
+    }
+
+    /**
+     * Shows a high-priority Heads-Up Notification for an incoming caller with direct "+ Book Now" action.
+     */
+    fun showIncomingCallNotification(
+        context: Context,
+        callerName: String,
+        phoneNumber: String,
+        callState: String = "RINGING"
+    ) {
+        createNotificationChannel(context)
+        if (!areNotificationsEnabled(context)) return
+
+        val displayName = if (callerName.isNotBlank()) callerName else "Caller"
+        val displayPhone = if (phoneNumber.isNotBlank()) phoneNumber else "Unknown Number"
+
+        val title = "📞 Incoming Call: $displayName"
+        val text = "$displayPhone • Tap '+ Book Now' to auto-fill appointment"
+
+        // Direct "+ Book Now" intent launching AppointmentsScreen with auto-booking pre-filled
+        val bookIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("navigate_to", "appointments")
+            putExtra("auto_book", true)
+            putExtra("caller_name", displayName)
+            putExtra("caller_phone", displayPhone)
+        }
+        val bookPendingIntent = PendingIntent.getActivity(
+            context,
+            2001,
+            bookIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val builder = NotificationCompat.Builder(context, INCOMING_CALL_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("Incoming Call from $displayName ($displayPhone)\nQuickly book caller into appointment schedule without leaving phone call."))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setFullScreenIntent(bookPendingIntent, false)
+            .setContentIntent(bookPendingIntent)
+            .setAutoCancel(true)
+            .addAction(
+                R.mipmap.ic_launcher,
+                "+ Book Now",
+                bookPendingIntent
+            )
+
+        try {
+            NotificationManagerCompat.from(context).notify(INCOMING_CALL_NOTIFICATION_ID, builder.build())
+        } catch (_: SecurityException) {
+            // POST_NOTIFICATIONS permission not granted
+        }
+    }
+
+    /**
+     * Cancels the incoming call heads-up notification once call ends.
+     */
+    fun dismissIncomingCallNotification(context: Context) {
+        try {
+            NotificationManagerCompat.from(context).cancel(INCOMING_CALL_NOTIFICATION_ID)
+        } catch (_: Exception) {}
     }
 }

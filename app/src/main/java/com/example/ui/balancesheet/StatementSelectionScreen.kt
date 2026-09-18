@@ -108,6 +108,7 @@ fun StatementSelectionScreen(
                         generateStatement(
                             context, scope, repository, localTransactions,
                             month.startDate, month.endDate,
+                            periodTitle = month.displayName,
                             onProgress = { isGeneratingPdf = it }
                         )
                     }
@@ -130,6 +131,7 @@ fun StatementSelectionScreen(
                         generateStatement(
                             context, scope, repository, localTransactions,
                             quarter.startDate, quarter.endDate,
+                            periodTitle = quarter.displayName,
                             onProgress = { isGeneratingPdf = it }
                         )
                     }
@@ -152,6 +154,7 @@ fun StatementSelectionScreen(
                         generateStatement(
                             context, scope, repository, localTransactions,
                             year.startDate, year.endDate,
+                            periodTitle = year.displayName,
                             onProgress = { isGeneratingPdf = it }
                         )
                     }
@@ -184,9 +187,12 @@ fun StatementSelectionScreen(
                     val end = dateRangePickerState.selectedEndDateMillis
                     if (start != null && end != null) {
                         showCustomRangePicker = false
+                        val dfCustom = SimpleDateFormat("dd MMM yyyy", Locale.US)
+                        val customTitle = "${dfCustom.format(Date(start))} - ${dfCustom.format(Date(end))}"
                         generateStatement(
                             context, scope, repository, localTransactions,
                             Date(start), Date(end),
+                            periodTitle = customTitle,
                             onProgress = { isGeneratingPdf = it }
                         )
                     } else {
@@ -275,6 +281,7 @@ private fun generateStatement(
     allTransactions: List<com.example.data.local.TransactionEntity>,
     startDate: Date,
     endDate: Date,
+    periodTitle: String = "",
     onProgress: (Boolean) -> Unit
 ) {
     onProgress(true)
@@ -343,7 +350,8 @@ private fun generateStatement(
             overallExpenses = overallExp,
             overallBills = overallBill,
             overallNet = currentCumulative,
-            profile = repository.getBusinessProfile()
+            profile = repository.getBusinessProfile(),
+            periodTitle = periodTitle
         )
         
         onProgress(false)
@@ -391,7 +399,7 @@ private fun getRecentQuarters(count: Int): List<QuarterPeriod> {
     
     // Financial Year Start: June 1st.
     val qStartMonths = intArrayOf(Calendar.JUNE, Calendar.SEPTEMBER, Calendar.DECEMBER, Calendar.MARCH)
-    val qNames = arrayOf("Q1 (Jun-Aug)", "Q2 (Sep-Nov)", "Q3 (Dec-Feb)", "Q4 (Mar-May)")
+    val qNames = arrayOf("Q1 (Jun - Aug)", "Q2 (Sep - Nov)", "Q3 (Dec - Feb)", "Q4 (Mar - May)")
     
     var checkCal = Calendar.getInstance()
     checkCal.set(Calendar.DAY_OF_MONTH, 1)
@@ -426,7 +434,9 @@ private fun getRecentQuarters(count: Int): List<QuarterPeriod> {
         val end = endCal.time
         
         val df = SimpleDateFormat("MMM yyyy", Locale.US)
-        val fyDisplay = if (targetMonth >= Calendar.JUNE) "${targetYear}-${targetYear+1}" else "${targetYear-1}-${targetYear}"
+        val startYr = if (targetMonth >= Calendar.JUNE) targetYear else targetYear - 1
+        val endYrShort = ((startYr + 1) % 100).toString().padStart(2, '0')
+        val fyDisplay = "$startYr-$endYrShort"
         
         list.add(QuarterPeriod(
             displayName = "${qNames[qIndex]} FY $fyDisplay",
@@ -460,8 +470,10 @@ private fun getRecentFinancialYears(count: Int): List<YearPeriod> {
         end.set(currentStartYear - i + 1, Calendar.MAY, 31, 23, 59, 59)
         
         val df = SimpleDateFormat("MMM yyyy", Locale.US)
+        val sYear = currentStartYear - i
+        val eYearShort = ((sYear + 1) % 100).toString().padStart(2, '0')
         list.add(YearPeriod(
-            displayName = "Annual Statement ${currentStartYear - i}-${currentStartYear - i + 1}",
+            displayName = "FY $sYear-$eYearShort",
             dateRangeDisplay = "${df.format(start.time)} - ${df.format(end.time)}",
             startDate = start.time,
             endDate = end.time
