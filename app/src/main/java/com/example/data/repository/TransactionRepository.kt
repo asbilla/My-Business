@@ -247,7 +247,7 @@ class TransactionRepository(
     data class BackupData(
         val version: Int = 2,
         val timestamp: Long = System.currentTimeMillis(),
-        val appVersion: String = "v5.8",
+        val appVersion: String = "v5.9",
         val businessProfile: BusinessProfile,
         val appointmentSettings: com.example.data.model.AppointmentSettings,
         val themeMode: String = "System",
@@ -271,7 +271,7 @@ class TransactionRepository(
                 val backup = BackupData(
                     version = 2,
                     timestamp = System.currentTimeMillis(),
-                    appVersion = "v5.8",
+                    appVersion = "v5.9",
                     businessProfile = profile,
                     appointmentSettings = settings,
                     themeMode = theme,

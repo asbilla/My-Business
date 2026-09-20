@@ -158,7 +158,6 @@ fun AppointmentsScreen(
     var selectedDate by remember { mutableStateOf(todayIso) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedStatusFilter by remember { mutableStateOf("All") } // "All", "Scheduled", "Confirmed", "Completed", "Cancelled"
-    var showAllDates by remember { mutableStateOf(false) }
 
     // Dialog / Bottom Sheet state
     var showBookingSheet by remember { mutableStateOf(false) }
@@ -220,9 +219,9 @@ fun AppointmentsScreen(
     }
 
     // Filter appointments
-    val filteredAppointments = remember(allAppointments, selectedDate, showAllDates, selectedStatusFilter, searchQuery) {
+    val filteredAppointments = remember(allAppointments, selectedDate, selectedStatusFilter, searchQuery) {
         allAppointments.filter { appt ->
-            val dateMatches = showAllDates || appt.appointmentDate == selectedDate
+            val dateMatches = selectedStatusFilter == "All" || appt.appointmentDate == selectedDate
             val statusMatches = selectedStatusFilter == "All" || appt.status.equals(selectedStatusFilter, ignoreCase = true)
             val searchMatches = searchQuery.isBlank() ||
                     appt.customerName.contains(searchQuery, ignoreCase = true) ||
@@ -319,7 +318,7 @@ fun AppointmentsScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Book Caller",
+                        text = "Book Now / Book Caller",
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -440,86 +439,12 @@ fun AppointmentsScreen(
                 }
             }
 
-            // PROMINENT QUICK CALLER BOOKING HERO CARD
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = AppointmentPurpleContainer.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.5.dp, AppointmentPurple.copy(alpha = 0.4f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(AppointmentPurple),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhoneCallback,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Client Calling in?",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = AppointmentPurpleText
-                            )
-                            Text(
-                                text = "Tap to book date, slot & client info",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = {
-                            appointmentToEdit = null
-                            showBookingSheet = true
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppointmentPurple,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.testTag("hero_book_caller_button")
-                    ) {
-                        Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Book Now", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
             // DATE SELECTOR HORIZONTAL STRIP
             DateStripSection(
                 selectedDate = selectedDate,
                 onSelectDate = {
                     selectedDate = it
-                    showAllDates = false
                 },
-                showAllDates = showAllDates,
-                onToggleAllDates = { showAllDates = !showAllDates },
                 allAppointments = allAppointments,
                 context = context
             )
@@ -661,7 +586,7 @@ fun AppointmentsScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Tap 'Book Caller' when a client phones in to assign an available time slot.",
+                            text = "Tap 'Book Now / Book Caller' to assign an available time slot.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -688,7 +613,7 @@ fun AppointmentsScreen(
                 ) {
                     item {
                         Text(
-                            text = if (showAllDates) "All Appointments (${filteredAppointments.size})" else "Bookings on $selectedDate (${filteredAppointments.size})",
+                            text = if (selectedStatusFilter == "All") "All Appointments (${filteredAppointments.size})" else "$selectedStatusFilter Bookings on $selectedDate (${filteredAppointments.size})",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
@@ -919,8 +844,6 @@ fun AppointmentsScreen(
 fun DateStripSection(
     selectedDate: String,
     onSelectDate: (String) -> Unit,
-    showAllDates: Boolean,
-    onToggleAllDates: () -> Unit,
     allAppointments: List<AppointmentEntity>,
     context: Context
 ) {
@@ -954,32 +877,6 @@ fun DateStripSection(
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // "All" chip
-        Surface(
-            onClick = onToggleAllDates,
-            shape = RoundedCornerShape(12.dp),
-            color = if (showAllDates) AppointmentPurple else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-            contentColor = if (showAllDates) Color.White else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier
-                .height(60.dp)
-                .padding(end = 8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 14.dp)
-                    .fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "ALL\nDates",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 13.sp
-                )
-            }
-        }
-
         // Horizontal Days List
         Row(
             modifier = Modifier
@@ -988,7 +885,7 @@ fun DateStripSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             daysList.forEach { day ->
-                val isSelected = !showAllDates && day.iso == selectedDate
+                val isSelected = day.iso == selectedDate
                 val countForDay = allAppointments.count { it.appointmentDate == day.iso && it.status != "Cancelled" }
 
                 Surface(
@@ -1430,12 +1327,12 @@ fun BookAppointmentSheetContent(
         ) {
             Column {
                 Text(
-                    text = if (isEditing) "Edit Appointment" else "📞 Book Caller Appointment",
+                    text = if (isEditing) "Edit Appointment" else "Book Now / Book Caller",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Fill client & schedule details while on phone call",
+                    text = "Fill client & schedule booking details",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

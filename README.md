@@ -139,5 +139,5 @@
 ## 📦 APK Installation & Releases
 
 The pre-built, ready-to-install debug APK is maintained in the root folder of this project:
-- **Current Release**: `MyBusiness-v5.8-debug.apk`
+- **Current Release**: `MyBusiness-v5.9-debug.apk`
 - **Installation**: Copy the APK file to your Android phone or tablet, open it using your file manager, and confirm installation.
