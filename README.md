@@ -58,13 +58,26 @@
 - **Category Organization**: Group items by service types or custom departments.
 - **Dynamic Pricing & Search**: Instantly update service rates and search products in real time during POS checkout.
 
-### 6. 🎨 Application Themes & Customization
+### 6. 📢 Special Offers, Promos & Rich Media Broadcasts
+- **Multi-Format Marketing**: Create and broadcast promotional messages with **Text Only**, **Flyer/Image**, **Video Reel**, **GIF Animation**, or **All-in-One (Text + Media)**.
+- **Phone Contacts & Client Selection**: Select 1 or multiple recipients directly from your device's address book and past salon client database, with real-time search, contact chips, and "Select All" support.
+- **Ready-to-Use Promo Templates**: Instant one-tap templates for Weekend Specials (20% OFF), VIP Loyalty Rewards, and Holiday/Festive Packages automatically populated with your registered business name, phone, and address.
+- **Dual Delivery Channels**:
+  - **WhatsApp / Universal Share**: Share high-resolution photos, flyers, or video reels with pre-filled promotional messages.
+  - **Direct SMS Dispatch**: Fast batch cellular SMS dispatch directly to selected recipients.
+
+### 7. 🎨 Application Themes & Customization
 - **Theme Selection**: Seamlessly switch between **System Default**, **Light Mode**, and high-contrast **Dark Mode** via Business Settings.
 - **Material Design 3**: Modern, ergonomic UI with dynamic color palettes, rounded cards, and responsive touch targets.
 
-### 7. 💾 Backup & Data Recovery
-- **Single-Tap JSON Export**: Export your entire database (transactions, appointments, catalog, and business settings) to a portable JSON backup file saved in your `Documents` folder.
-- **Instant JSON Restore**: Restore all records and preferences on a new device or after a factory reset using Android's system document picker.
+### 8. 💾 Full System Backup & Data Recovery
+- **Single-Tap JSON Export**: Exports **everything** across your system into a portable, structured JSON backup file saved in your `Documents` folder:
+  - **Business Details**: Business Name, ABN/ACN, Business Address, Phone/Mobile, Email.
+  - **Financial Details**: Complete day-by-day sales records, expenses, bills, amounts, categories, notes, dates, and timestamps.
+  - **Products & Services**: The entire service and retail catalog, custom prices, and service categories.
+  - **Appointments & Bookings**: All past and upcoming client bookings, appointment times, dates, statuses, customer names, phone numbers, and notes.
+  - **System Preferences**: Booking settings (slot durations, working hours, working days, buffer times), notifications & reminder preferences, and theme mode.
+- **Instant JSON Restore**: Seamlessly reload the complete system on a new device or after a factory reset with a single tap, displaying an itemized summary of restored transactions, appointments, products, and profile settings.
 
 ---
 
@@ -126,5 +139,5 @@
 ## 📦 APK Installation & Releases
 
 The pre-built, ready-to-install debug APK is maintained in the root folder of this project:
-- **Current Release**: `MyBusiness-v5.3-debug.apk` (or latest generated build)
+- **Current Release**: `MyBusiness-v5.8-debug.apk`
 - **Installation**: Copy the APK file to your Android phone or tablet, open it using your file manager, and confirm installation.

@@ -1370,7 +1370,7 @@ fun SetupScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     Text(
-                        text = "Protect your data by manually exporting a JSON backup to your Documents folder. You can use this file to restore your data on another device or after a reset.",
+                        text = "Protect your entire system by exporting a complete JSON backup to your Documents folder. Includes business details, day-by-day sales & expenses, products & services, appointment bookings, and configuration settings.",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1385,7 +1385,7 @@ fun SetupScreen(
                                 scope.launch {
                                     val result = repository.exportBackup()
                                     result.onSuccess { file ->
-                                        Toast.makeText(context, "Backup exported to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Full backup exported to: ${file.absolutePath}", Toast.LENGTH_LONG).show()
                                     }.onFailure { e ->
                                         Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
                                     }
@@ -1397,7 +1397,7 @@ fun SetupScreen(
                         ) {
                             Icon(imageVector = Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp), tint = IncomeGreen)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Export JSON", color = IncomeGreen, fontWeight = FontWeight.Bold)
+                            Text("Export Backup", color = IncomeGreen, fontWeight = FontWeight.Bold)
                         }
 
                         // RESTORE BUTTON
@@ -1425,7 +1425,7 @@ fun SetupScreen(
                         ) {
                             Icon(imageVector = Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp), tint = BalanceBlue)
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Restore JSON", color = BalanceBlue, fontWeight = FontWeight.Bold)
+                            Text("Restore Backup", color = BalanceBlue, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1438,7 +1438,7 @@ fun SetupScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "My Business v5.0",
+                    text = "My Business v5.8",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)

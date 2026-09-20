@@ -64,4 +64,12 @@ interface AppointmentDao {
 
     @Query("SELECT customerName FROM appointments WHERE customerPhone = :phone AND customerName != '' ORDER BY id DESC LIMIT 1")
     suspend fun getCustomerNameByPhone(phone: String): String?
+
+    @Query("SELECT DISTINCT customerName, customerPhone FROM appointments WHERE customerPhone != '' AND customerPhone IS NOT NULL ORDER BY customerName ASC")
+    suspend fun getAllClientContacts(): List<ClientContact>
 }
+
+data class ClientContact(
+    val customerName: String,
+    val customerPhone: String
+)

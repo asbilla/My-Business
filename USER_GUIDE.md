@@ -184,9 +184,15 @@ In **Settings > Appointment Settings**:
 
 ## 10. Local Backup & Restore (JSON)
 
-Protect your data against device loss or transfer records to a new phone:
-- **Export Backup**: Tap **Settings > Backup & Recovery > Export Backup**. A timestamped `.json` file containing all transactions, appointments, products, and profile settings is saved to your `Documents` folder.
-- **Restore Backup**: Tap **Import Backup** and select a previously exported `.json` file to restore all your records instantly.
+Protect your entire business data against device loss, or transfer records to a new phone:
+- **Comprehensive Full Backup**: Backs up **everything** in your application:
+  - **Business Profile**: Business name, ABN/ACN, phone number, email, and physical address.
+  - **Financial Details**: Complete day-by-day sales records, expenses, bills, categories, timestamps, and amounts.
+  - **Products & Services**: Full catalog of items, pricing, and categories.
+  - **Appointments & Bookings**: All scheduled, confirmed, and historical customer bookings with customer names, phone numbers, notes, and service selections.
+  - **System Preferences**: Booking slot duration, working hours, working days, buffer time, reminder toggles, automated SMS preference, and visual theme selection.
+- **Export Backup**: Tap **Settings > Backup & Data Recovery > Export Backup**. A timestamped `.json` file (`MyBusiness_FullBackup_YYYYMMDD_HHMMSS.json`) is safely written to your `Documents` folder.
+- **Restore Backup**: Tap **Restore Backup** and select any previously exported `.json` file. The app validates and reloads all transactions, appointments, products, and profile settings with a detailed summary report.
 
 ---
 
@@ -200,7 +206,7 @@ Protect your data against device loss or transfer records to a new phone:
 ## 12. APK Installation & Versioning
 
 The latest pre-compiled, standalone APK is always available in the root folder:
-- **Current File**: `MyBusiness-v5.3-debug.apk`
+- **Current File**: `MyBusiness-v5.7-debug.apk`
 - **Installation**: Transfer the APK to your Android device, tap to install, and grant install-from-unknown-sources permission if prompted.
 - **Auto-Versioning**: Every new release automatically increments version numbering (e.g., v5.1 ➔ v5.2 ➔ v5.3).
 

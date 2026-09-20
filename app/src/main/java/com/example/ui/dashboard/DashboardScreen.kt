@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MoneyOff
@@ -86,6 +87,7 @@ fun DashboardScreen(
     onNavigateToAppointments: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToMenuManagement: () -> Unit,
+    onNavigateToSpecialOffers: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -248,6 +250,18 @@ fun DashboardScreen(
                 textColor = Color(0xFF312E81),
                 testTag = "action_menu_services",
                 onClick = onNavigateToMenuManagement
+            )
+
+            // 7. Special Offers & Promo Broadcasts (Teal / Emerald Accent) -> Opens SpecialOffersScreen
+            ActionButtonCard(
+                title = "Special Offers & Promos",
+                subtitle = "Send text, flyers, reels & animations to phone contacts & salon clients",
+                icon = Icons.Default.Campaign,
+                accentColor = Color(0xFF0D9488), // Teal
+                containerColor = Color(0xFFCCFBF1), // Teal Container
+                textColor = Color(0xFF115E59), // Teal Text
+                testTag = "action_special_offers",
+                onClick = onNavigateToSpecialOffers
             )
 
             // 2. TODAY'S NET BALANCE SECTION (BELOW QUICK ACTIONS)

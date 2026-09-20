@@ -71,4 +71,88 @@ object ContactHelper {
 
         return null
     }
+
+    /**
+     * Data class representing a contact item for promotional messaging.
+     */
+    data class ContactItem(
+        val name: String,
+        val phoneNumber: String,
+        val source: String = "Phone Contact" // "Phone Contact" or "Salon Client"
+    )
+
+    /**
+     * Fetches all available contacts from the device's ContactsContract as well as
+     * previous salon clients from the internal database.
+     * Deduplicates by normalized phone numbers.
+     */
+    suspend fun getAllAvailableContacts(context: Context): List<ContactItem> {
+        val result = mutableMapOf<String, ContactItem>()
+
+        // 1. Fetch from Phone Contacts if permission granted
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            try {
+                val projection = arrayOf(
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.CommonDataKinds.Phone.NUMBER
+                )
+                val cursor = context.contentResolver.query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC"
+                )
+                cursor?.use {
+                    val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                    val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    while (it.moveToNext()) {
+                        val name = if (nameIdx != -1) it.getString(nameIdx) else ""
+                        val number = if (numIdx != -1) it.getString(numIdx) else ""
+                        val normalized = normalizePhone(number)
+                        if (normalized.isNotBlank() && !result.containsKey(normalized)) {
+                            result[normalized] = ContactItem(
+                                name = if (name.isNotBlank()) name.trim() else normalized,
+                                phoneNumber = number.trim(),
+                                source = "Phone Contact"
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 2. Also merge previous business clients from AppDatabase
+        try {
+            val db = AppDatabase.getDatabase(context)
+            val clients = db.appointmentDao().getAllClientContacts()
+            clients.forEach { client ->
+                val normalized = normalizePhone(client.customerPhone)
+                if (normalized.isNotBlank()) {
+                    val existing = result[normalized]
+                    if (existing == null) {
+                        result[normalized] = ContactItem(
+                            name = if (client.customerName.isNotBlank()) client.customerName.trim() else normalized,
+                            phoneNumber = client.customerPhone.trim(),
+                            source = "Salon Client"
+                        )
+                    } else if (existing.source != "Salon Client" && client.customerName.isNotBlank()) {
+                        result[normalized] = existing.copy(name = client.customerName.trim(), source = "Salon Client")
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        return result.values.sortedBy { it.name.lowercase() }
+    }
+
+    private fun normalizePhone(phone: String?): String {
+        if (phone.isNullOrBlank()) return ""
+        // Remove spaces, hyphens, brackets
+        return phone.replace("[^0-9+]".toRegex(), "")
+    }
 }

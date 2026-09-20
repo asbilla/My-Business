@@ -28,13 +28,13 @@ android {
     val formattedDate = SimpleDateFormat("yyyyMMdd.HHmm", Locale.US).format(now)
     
     versionCode = (timestamp / 10000).toInt() // Unique version code
-    versionName = "v5.3" 
+    versionName = "v5.8" 
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     
     // Custom output naming
     base {
-        archivesName.set("MyBusiness-v5.3")
+        archivesName.set("MyBusiness-v5.8")
     }
   }
 
@@ -51,6 +51,8 @@ android {
       storePassword = "android"
       keyAlias = "androiddebugkey"
       keyPassword = "android"
+      enableV1Signing = true
+      enableV2Signing = true
     }
   }
 
@@ -114,7 +116,7 @@ dependencies {
   implementation(libs.androidx.work.runtime.ktx)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
-  // implementation(libs.coil.compose)
+  implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   implementation(libs.firebase.ai)
   // Uncomment to use Firestore:

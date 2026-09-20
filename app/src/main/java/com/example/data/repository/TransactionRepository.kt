@@ -245,10 +245,13 @@ class TransactionRepository(
 
     @kotlinx.serialization.Serializable
     data class BackupData(
-        val version: Int = 1,
+        val version: Int = 2,
         val timestamp: Long = System.currentTimeMillis(),
+        val appVersion: String = "v5.8",
         val businessProfile: BusinessProfile,
         val appointmentSettings: com.example.data.model.AppointmentSettings,
+        val themeMode: String = "System",
+        val webAppUrl: String = "",
         val products: List<ProductItem>,
         val transactions: List<TransactionEntity>,
         val appointments: List<AppointmentEntity>
@@ -262,10 +265,17 @@ class TransactionRepository(
                 val profile = preferences.getBusinessProfile()
                 val settings = preferences.getAppointmentSettings()
                 val prods = preferences.getCachedProducts()
+                val theme = preferences.getThemeMode()
+                val webUrl = preferences.getWebAppUrl()
 
                 val backup = BackupData(
+                    version = 2,
+                    timestamp = System.currentTimeMillis(),
+                    appVersion = "v5.8",
                     businessProfile = profile,
                     appointmentSettings = settings,
+                    themeMode = theme,
+                    webAppUrl = webUrl,
                     products = prods,
                     transactions = transactions,
                     appointments = appointments
@@ -274,9 +284,10 @@ class TransactionRepository(
                 val json = kotlinx.serialization.json.Json { 
                     prettyPrint = true
                     ignoreUnknownKeys = true 
+                    encodeDefaults = true
                 }.encodeToString(BackupData.serializer(), backup)
 
-                val fileName = "DailyReport_Backup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.json"
+                val fileName = "MyBusiness_FullBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())}.json"
                 val documentsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS)
                 if (!documentsDir.exists()) documentsDir.mkdirs()
                 
@@ -300,23 +311,23 @@ class TransactionRepository(
                     ignoreUnknownKeys = true 
                 }.decodeFromString(BackupData.serializer(), json)
 
-                // Restore Preferences
+                // Restore Preferences (Business profile, appointments settings, products/services, theme, URLs)
                 preferences.setBusinessProfile(backup.businessProfile)
                 preferences.setAppointmentSettings(backup.appointmentSettings)
                 preferences.setCachedProducts(backup.products)
+                if (backup.themeMode.isNotBlank()) {
+                    preferences.setThemeMode(backup.themeMode)
+                }
+                if (backup.webAppUrl.isNotBlank()) {
+                    preferences.setWebAppUrl(backup.webAppUrl)
+                }
 
                 // Restore Database
                 database.withTransaction {
-                    // We could wipe or merge. User usually expects a full restore/replace.
-                    // For safety, let's merge by UUID if available, but entities have auto-gen IDs.
-                    // A safer approach for "Restore" is often to clear and replace.
+                    // Clear existing database tables
+                    database.clearAllTables()
                     
-                    // Clear existing
-                    database.clearAllTables() // Room built-in
-                    
-                    // Insert all (IDs will be re-generated if they are 0, but here they might have IDs)
-                    
-                    // Re-insert transactions
+                    // Re-insert transactions (day by day financial sales & expenses)
                     backup.transactions.forEach {
                         database.transactionDao().insertTransaction(it.copy(id = 0))
                     }
@@ -327,7 +338,7 @@ class TransactionRepository(
                     }
                 }
 
-                Result.success("Backup restored successfully! ${backup.transactions.size} sales and ${backup.appointments.size} bookings recovered.")
+                Result.success("Full system backup restored successfully!\n• ${backup.transactions.size} transactions / sales restored\n• ${backup.appointments.size} appointments restored\n• ${backup.products.size} products & services restored\n• Business profile & settings restored")
             } catch (e: Exception) {
                 Result.failure(e)
             }

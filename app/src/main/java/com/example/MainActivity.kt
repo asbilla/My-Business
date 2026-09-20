@@ -27,6 +27,7 @@ import com.example.ui.appointments.AppointmentsScreen
 import com.example.ui.balancesheet.BalanceSheetScreen
 import com.example.ui.dashboard.DashboardScreen
 import com.example.ui.entry.EntryScreen
+import com.example.ui.offers.SpecialOffersScreen
 import com.example.ui.setup.MenuManagementScreen
 import com.example.ui.setup.SetupScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -102,6 +103,7 @@ sealed class Screen(val route: String) {
     data object BalanceSheet : Screen("balancesheet")
     data object Appointments : Screen("appointments")
     data object MenuManagement : Screen("menu_management")
+    data object SpecialOffers : Screen("special_offers")
     data object StatementSelection : Screen("statement_selection")
     data object Entry : Screen("entry/{entryType}") {
         fun createRoute(entryType: String): String = "entry/${Uri.encode(entryType)}"
@@ -170,6 +172,19 @@ fun AppNavigation(
                 },
                 onNavigateToMenuManagement = {
                     navController.navigate(Screen.MenuManagement.route)
+                },
+                onNavigateToSpecialOffers = {
+                    navController.navigate(Screen.SpecialOffers.route)
+                }
+            )
+        }
+
+        // Special Offers & Promo Broadcast Screen
+        composable(Screen.SpecialOffers.route) {
+            SpecialOffersScreen(
+                repository = repository,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
